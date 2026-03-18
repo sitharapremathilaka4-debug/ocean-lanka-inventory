@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ocean Lanka Inventory System</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f6f9;
+margin:0;
+}
+
+header{
+background:#ffffff;
+padding:20px;
+display:flex;
+align-items:center;
+box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+header img{
+height:70px;
+margin-right:20px;
+}
+
+.company{
+font-size:28px;
+font-weight:bold;
+color:#006b4f;
+}
+
+.subtitle{
+font-size:15px;
+color:#444;
+}
+
+.container{
+padding:30px;
+}
+
+.section{
+background:white;
+padding:20px;
+margin-bottom:20px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+input, select{
+padding:8px;
+margin:5px;
+}
+
+button{
+padding:8px 12px;
+border:none;
+background:#006b4f;
+color:white;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#004f39;
+}
+
+.deleteBtn{
+background:#d9534f;
+}
+
+.editBtn{
+background:#f0ad4e;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:15px;
+}
+
+th, td{
+padding:10px;
+border-bottom:1px solid #ddd;
+text-align:center;
+}
+
+th{
+background:#006b4f;
+color:white;
+}
+
+.lowstock{
+background:#ffd6d6;
+color:red;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<img src="C:\Users\USER\Downloads\logo-ocenlanka.png" alt="Ocean Lanka Logo" , align= "center">
+
+<div>
+<div class="company">Ocean Lanka Pvt Ltd</div>
+<div class="subtitle">Engineering & Maintenance Inventory Management System</div>
+</div>
+
+</header>
+
+<div class="container">
+
+<div class="section">
+
+<h2>Add Item</h2>
+
+<input type="text" id="itemName" placeholder="Item Name">
+<input type="text" id="category" placeholder="Category">
+<input type="number" id="quantity" placeholder="Quantity">
+<input type="number" id="reorderLevel" placeholder="Reorder Level">
+<input type="text" id="location" placeholder="Location (Optional)">
+
+<button onclick="addItem()">Add Item</button>
+
+</div>
+
+
+<div class="section">
+
+<h2>Search Item</h2>
+
+<input type="text" id="searchBox" placeholder="Enter item name">
+<button onclick="searchItem()">Search</button>
+<button onclick="showAll()">Show All</button>
+
+</div>
+
+
+<div class="section">
+
+<h2>Filter Inventory</h2>
+
+<select onchange="filterItems(this.value)">
+<option value="all">All Items</option>
+<option value="reorder">Items Need Reorder</option>
+<option value="instock">Items In Stock</option>
+</select>
+
+</div>
+
+
+<div class="section">
+
+<h2>Inventory List</h2>
+
+<table id="inventoryTable">
+
+<tr>
+<th>ID</th>
+<th>Item Name</th>
+<th>Category</th>
+<th>Quantity</th>
+<th>Reorder Level</th>
+<th>Location</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+
+</table>
+
+</div>
+
+</div>
+
+
+<script>
+
+let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
+let id = inventory.length > 0 ? Math.max(...inventory.map(i => i.id)) + 1 : 1;
+
+function saveData(){
+localStorage.setItem("inventory", JSON.stringify(inventory));
+}
+
+function addItem(){
+
+let name = document.getElementById("itemName").value.trim();
+let category = document.getElementById("category").value.trim();
+let quantity = parseInt(document.getElementById("quantity").value);
+let reorder = parseInt(document.getElementById("reorderLevel").value);
+let locationInput = document.getElementById("location").value.trim();
+let location = locationInput === "" ? "Not Specified" : locationInput;
+
+if(!name || !category || isNaN(quantity) || isNaN(reorder)){
+alert("Please fill Item Name, Category, Quantity and Reorder Level");
+return;
+}
+
+let item = {
+id:id++,
+name:name,
+category:category,
+quantity:quantity,
+reorder:reorder,
+location:location
+};
+
+inventory.push(item);
+
+saveData();
+displayItems(inventory);
+clearFields();
+
+}
+
+function clearFields(){
+document.getElementById("itemName").value="";
+document.getElementById("category").value="";
+document.getElementById("quantity").value="";
+document.getElementById("reorderLevel").value="";
+document.getElementById("location").value="";
+}
+
+function displayItems(list){
+
+let table = document.getElementById("inventoryTable");
+
+table.innerHTML = `
+<tr>
+<th>ID</th>
+<th>Item Name</th>
+<th>Category</th>
+<th>Quantity</th>
+<th>Reorder Level</th>
+<th>Location</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+`;
+
+list.forEach(item=>{
+
+let status = "OK";
+let rowClass = "";
+
+if(item.quantity <= item.reorder){
+status = "REORDER NEEDED";
+rowClass = "lowstock";
+}
+
+let row = `
+<tr class="${rowClass}">
+<td>${item.id}</td>
+<td>${item.name}</td>
+<td>${item.category}</td>
+<td>${item.quantity}</td>
+<td>${item.reorder}</td>
+<td>${item.location}</td>
+<td>${status}</td>
+<td>
+<button class="editBtn" onclick="editItem(${item.id})">Edit</button>
+<button class="deleteBtn" onclick="deleteItem(${item.id})">Delete</button>
+</td>
+</tr>
+`;
+
+table.innerHTML += row;
+
+});
+
+}
+
+function searchItem(){
+
+let keyword = document.getElementById("searchBox").value.toLowerCase().trim();
+
+let filtered = inventory.filter(item =>
+item.name.toLowerCase().includes(keyword)
+);
+
+displayItems(filtered);
+
+}
+
+function showAll(){
+displayItems(inventory);
+}
+
+function filterItems(type){
+
+let filtered = [];
+
+if(type === "reorder"){
+filtered = inventory.filter(item => item.quantity <= item.reorder);
+}
+else if(type === "instock"){
+filtered = inventory.filter(item => item.quantity > item.reorder);
+}
+else{
+filtered = inventory;
+}
+
+displayItems(filtered);
+
+}
+
+function deleteItem(itemId){
+
+if(confirm("Delete this item?")){
+inventory = inventory.filter(item => item.id !== itemId);
+saveData();
+displayItems(inventory);
+}
+
+}
+
+function editItem(itemId){
+
+let item = inventory.find(i => i.id === itemId);
+
+let newName = prompt("Edit Item Name", item.name);
+let newCategory = prompt("Edit Category", item.category);
+let newQty = prompt("Edit Quantity", item.quantity);
+let newReorder = prompt("Edit Reorder Level", item.reorder);
+let newLocation = prompt("Edit Location (optional)", item.location);
+
+if(newName !== null && newCategory !== null && newQty !== null && newReorder !== null && newLocation !== null){
+
+newName = newName.trim();
+newCategory = newCategory.trim();
+newLocation = newLocation.trim() === "" ? "Not Specified" : newLocation;
+
+if(!newName || !newCategory || isNaN(parseInt(newQty)) || isNaN(parseInt(newReorder))){
+alert("Invalid input. Please enter valid values.");
+return;
+}
+
+item.name = newName;
+item.category = newCategory;
+item.quantity = parseInt(newQty);
+item.reorder = parseInt(newReorder);
+item.location = newLocation;
+
+saveData();
+displayItems(inventory);
+
+}
+
+}
+
+displayItems(inventory);
+
+</script>
+
+</body>
+</html>
